@@ -1,0 +1,15 @@
+defaults:
+  - train_his_sim
+
+resume_pretrained: 
+camera_resolution: 224x126 #  WxH
+image_size: [126, 224] # H,W
+safe_ssi: true
+eval_dataset: [HssdIsaacStd]
+eval_num_batch: -1
+eval_batch_size: 32
+sampler: my_ddpm
+num_inference_timesteps: 128
+num_intermediate_images: 8
+num_inference_rounds: 1
+write_pcd: true

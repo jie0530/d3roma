@@ -1,0 +1,10 @@
+datasets*
+**/*.pyc
+experiments*
+checkpoint
+_outputs
+_outputs/**
+checkpoint/**
+test_*
+backup
+bad_sim*

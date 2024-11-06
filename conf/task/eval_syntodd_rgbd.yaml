@@ -1,0 +1,16 @@
+defaults:
+  - train_syntodd_rgbd
+
+name: clearpose
+resume_pretrained: experiments/syntodd_rgbd-0810.dep1.lr1e-04.sample.ssi.squaredcos_cap_v2.pyramid.my_ddpm128.SynTODDRgbd.240x320.rgb+raw.w0.0/best
+eval_num_batch: -1
+camera_resolution: 320x240 #  WxH
+image_size: [240,320] # H,W
+eval_dataset: [SynTODDRgbd]
+num_intermediate_images: 8
+sampler: my_ddpm
+plot_error_map: false
+plot_denoised_images: false
+eval_batch_size: 12
+eval_split: "test"
+safe_ssi: false

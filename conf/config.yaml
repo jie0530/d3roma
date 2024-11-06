@@ -1,0 +1,11 @@
+
+defaults:
+  - _self_
+  - task: train_ldm
+
+debug: false
+seed: -1
+
+hydra:
+  run:
+    dir: _outputs/${hydra.job.name}

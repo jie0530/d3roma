@@ -1,0 +1,14 @@
+defaults:
+  - train_ldm_his
+
+name: ldm_his
+resume_pretrained: 
+camera_resolution: 640x360 #  W,H
+image_size: [180, 320] # H,W
+eval_dataset: [HssdIsaacStd]
+eval_num_batch: -1
+eval_batch_size: 4
+num_inference_timesteps: 10
+num_intermediate_images: 5
+num_inference_rounds: 1
+

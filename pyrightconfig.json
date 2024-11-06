@@ -1,0 +1,16 @@
+{
+    "exclude": ["datasets", "experiments", "experiments.corl24", "checkpoint", "_outputs"],
+    "reportPrivateImportUsage": false,
+    "reportOptionalMemberAccess": false,
+    "reportCallIssue": false,
+    "reportPossiblyUnboundVariable": false,
+    "reportArgumentType": false,
+    "reportOptionalSubscript": false,
+    "reportAttributeAccessIssue": false,
+    "reportOptionalOperand": false,
+    "reportIndexIssue": false,
+    "reportAssignmentType": false,
+    "reportOperatorIssue": false,
+    "reportReturnType": false,
+    "reportGeneralTypeIssues": false
+}

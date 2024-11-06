@@ -1,0 +1,21 @@
+defaults:
+  - train_ldm_mono
+
+name: eval_ldm_mono
+resume_pretrained: experiments/ldm_mono-0809.dep4.lr3e-05.v_prediction.ssi.scaled_linear.randn.ddpm1000.SynTODD.240x320.rgb.w0.0/best
+eval_dataset: [SynTODD]
+eval_split: test
+# camera_resolution: 640x480
+# image_size: [480, 640]
+eval_num_batch: -1
+eval_batch_size: 16
+num_inference_rounds: 1
+num_inference_timesteps: 10
+num_intermediate_images: 5
+plot_denoised_images: false
+plot_error_map: true
+write_pcd: false
+# ensemble: false
+# safe_ssi: true
+# ransac_error_threshold: 0.6 # rmse error, 0.6 for nyu
+

@@ -1,0 +1,44 @@
+defaults:
+  - cfg
+
+name: sceneflow
+ldm: false
+prediction_space: disp
+ssi: false
+normalize_mode: average
+ch_bounds: [128]
+ch_gammas: [1.0]
+resume_pretrained: 
+camera_resolution: 480x270 #960x540 #  W,H
+image_size: [270, 480] # H,W
+train_dataset: [SceneFlow]
+eval_dataset: [SceneFlow]
+train_batch_size: 4
+eval_num_batch: -1
+eval_batch_size: 8
+lr_warmup_steps: 1000
+learning_rate: 1e-4
+lr_scheduler: linear
+gradient_accumulation_steps: 1
+val_every_global_steps: 2000
+save_model_epochs: 5
+num_train_timesteps: 128
+num_inference_timesteps: 10
+num_intermediate_images: 5
+num_inference_rounds: 1
+block_out_channels: [128, 128, 256, 256, 512, 512]
+noise_strategy: pyramid
+loss_type: l1
+prediction_type: sample
+num_epochs: 600
+cond_channels: left+right+raw
+depth_channels: 3
+beta_schedule: squaredcos_cap_v2
+beta_start: 1e-4
+beta_end: 2e-2
+sampler: my_ddpm 
+mixed_precision: "no"
+thresholding: true 
+dynamic_thresholding_ratio: 0.995
+clip_sample: true 
+clip_sample_range: 1.0

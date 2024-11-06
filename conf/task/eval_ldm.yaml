@@ -1,0 +1,25 @@
+defaults:
+  - train_ldm
+
+name: eval_ft_sd2_hypersim
+resume_pretrained: experiments/d.fixed.lr3e-05.v_prediction.ssi.scaled_linear.randn.ssi.my_ddpm1000.HyperSim.240x320.cond4.w0.0/epoch_0038
+# train_dataset: [HyperSim]
+eval_dataset: [NYUv2]
+eval_split: val
+camera_resolution: 640x480
+image_size: [480, 640]
+eval_num_batch: -1
+eval_batch_size: 3
+eval_output: "" # use default 
+flow_guidance_mode: imputation
+flow_guidance_weights: [0]
+num_inference_rounds: 1
+num_inference_timesteps: 10
+num_intermediate_images: 5
+plot_denoised_images: true
+write_pcd: false
+plot_error_map: true
+ensemble: false
+# safe_ssi: true
+# ransac_error_threshold: 0.6 # rmse error, 0.6 for nyu
+

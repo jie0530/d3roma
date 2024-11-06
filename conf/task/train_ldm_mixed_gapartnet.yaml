@@ -1,0 +1,47 @@
+defaults:
+  - cfg
+
+name: ldm_mixed_gapartnet
+resume_pretrained: 
+ldm: true
+depth_channels: 4
+divis_by: 8
+prediction_space: disp
+camera_resolution: 320x180 #  W,H
+# camera_resolution: 480x270 #  W,H
+image_size: [180,320] # H,W
+# image_size: [270,480] # H,W
+train_dataset: [SceneFlow, Dreds, HssdIsaacStd, Gapartnet2]
+eval_dataset: [SceneFlow, Dreds, HssdIsaacStd, Gapartnet2, Real]
+dataset_weight: [1, 1, 1, 1] 
+train_batch_size: 16
+gradient_accumulation_steps: 1
+eval_num_batch: 10
+eval_batch_size: 4
+lr_warmup_steps: 0
+learning_rate: 3e-5
+lr_scheduler: constant # linear: almost the same as constant
+val_every_global_steps: 1000
+save_model_epochs: 3
+num_train_timesteps: 1000
+num_inference_timesteps: 10
+num_intermediate_images: 5
+num_inference_rounds: 1
+ssi: false
+normalize_mode: average
+num_chs: 1
+ch_bounds: [128.]
+ch_gammas: [1.]
+noise_strategy: randn
+loss_type: mse
+prediction_type: v_prediction
+sampler: ddpm
+num_epochs: 200
+cond_channels: left+right+raw
+beta_schedule: scaled_linear
+beta_start: 0.00085
+beta_end: 0.012
+mixed_precision: "no"
+thresholding: false 
+clip_sample: false
+block_out_channels: [0] # N/A

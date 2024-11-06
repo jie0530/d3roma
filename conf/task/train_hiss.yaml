@@ -1,0 +1,48 @@
+defaults:
+  - cfg
+
+name: hiss
+ldm: false
+prediction_space: disp
+resume_pretrained: 
+cond_channels: left+right+raw
+camera_resolution: 224x126 #  WxH
+image_size: [126, 224] # H,W
+ssi: true
+safe_ssi: true
+train_dataset: [HssdIsaacStd]
+eval_dataset: [HssdIsaacStd]
+normalize_mode: average
+ch_bounds: [64.]
+ch_gammas: [1.]
+num_chs: 1
+norm_s: 2
+norm_t: 0.5
+train_batch_size: 32
+eval_num_batch: -1
+eval_batch_size: 32
+lr_warmup_steps: 1000
+learning_rate: 0.0001
+lr_scheduler: constant
+gradient_accumulation_steps: 1
+val_every_global_steps: 5000
+save_model_epochs: 5
+num_train_timesteps: 128
+num_inference_timesteps: 8
+num_intermediate_images: 4
+num_inference_rounds: 1
+block_out_channels: [128, 128, 256, 256, 512, 512]
+noise_strategy: pyramid
+loss_type: mse
+prediction_type: sample
+num_epochs: 200
+depth_channels: 1
+beta_schedule: squaredcos_cap_v2
+beta_start: 0.0001
+beta_end: 0.02
+sampler: my_ddpm
+mixed_precision: "no"
+thresholding: true 
+dynamic_thresholding_ratio: 0.995
+clip_sample: true 
+clip_sample_range: 1.0

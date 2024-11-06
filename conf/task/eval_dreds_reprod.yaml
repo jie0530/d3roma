@@ -1,0 +1,17 @@
+defaults:
+  - train_dreds_reprod
+
+name: dreds
+resume_pretrained: 
+cond_channels: left+right+raw
+camera_resolution: 224x126 #  WxH
+image_size: [126, 224] # H,W
+safe_ssi: true
+train_dataset: [Dreds]
+eval_dataset: [Dreds]
+eval_num_batch: -1
+eval_batch_size: 32
+save_model_epochs: 5
+num_inference_timesteps: 128
+num_intermediate_images: 8
+sampler: my_ddpm
