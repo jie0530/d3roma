@@ -65,7 +65,22 @@ This will generate three files under folder `_output`:
 
 #### Training Protocols & Dataset (Comming Soon)
 
+#### Contact
+If you have any questions please contact us:
 
+Songlin Wei: slwei@stu.pku.edu.cn, He Wang: hewang@pku.edu.cn
+
+## Citation
+```
+@inproceedings{
+  wei2024droma,
+  title={D3RoMa: Disparity Diffusion-based Depth Sensing for Material-Agnostic Robotic Manipulation},
+  author={Songlin Wei and Haoran Geng and Jiayi Chen and Congyue Deng and Cui Wenbo and Chengyang Zhao and Xiaomeng Fang and Leonidas Guibas and He Wang},
+  booktitle={8th Annual Conference on Robot Learning},
+  year={2024},
+  url={https://openreview.net/forum?id=7E3JAys1xO}
+}
+```
 
 
 ## License
