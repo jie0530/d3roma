@@ -9,6 +9,8 @@
     <img src="https://img.shields.io/badge/Paper-arXiv-green" alt="Paper arXiv"></a>
     <a href="https://pku-epic.github.io/D3RoMa/" target="_blank">
     <img src="https://img.shields.io/badge/Page-D3RoMa-blue" alt="Project Page"/></a>
+    <a href="https://openreview.net/forum?id=7E3JAys1xO" target="_blank">
+    <img src="https://img.shields.io/badge/Page-OpenReview-blue" alt="Open Review"/></a>
 </div>
 </h2>
 
@@ -68,7 +70,7 @@ This will generate three files under folder `_output`:
 #### Contact
 If you have any questions please contact us:
 
-Songlin Wei: slwei@stu.pku.edu.cn, He Wang: hewang@pku.edu.cn
+Songlin Wei: slwei@stu.pku.edu.cn, Haoran Geng: ghr@berkeley.edu, He Wang: hewang@pku.edu.cn
 
 ## Citation
 ```
