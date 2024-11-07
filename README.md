@@ -1,7 +1,7 @@
 <h2 align="center">
   <b>D<sup>3</sup>RoMa: Disparity Diffusion-based Depth Sensing for Material-Agnostic Robotic Manipulation</b>
-  <b><i>CoRL 2024, Munich, Germany.
-</i></b>
+
+  <b><i>CoRL 2024, Munich, Germany.</i></b>
 
 
 <div align="center">
@@ -14,7 +14,7 @@
 
 This is the official repository of [**D3RoMa: Disparity Diffusion-based Depth Sensing for Material-Agnostic Robotic Manipulation**](https://arxiv.org/abs/2409.14365).
 
-For more information, please visit our [**project page**](https://pku-epic.github.io/D3RoMa /).
+For more information, please visit our [**project page**](https://pku-epic.github.io/D3RoMa/).
 
 [Songlin Wei](https://songlin.github.io/),
 [Haoran Geng](https://geng-haoran.github.io/),
