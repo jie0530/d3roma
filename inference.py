@@ -36,7 +36,7 @@ def denormalize(config, pred_disps, raw_disp=None, mask=None):
 
 class D3RoMa():
     def __init__(self, overrides=[], camera=None, variant="left+right+raw"):
-        assert variant in ["left+right+raw", "rgb+raw"], "not implemented yet"
+        assert variant in ["left+right+raw", "rgb+raw"], "not released yet"
 
         from config import TrainingConfig, setup_hydra_configurations
         self.camera: Realsense = camera
@@ -254,11 +254,11 @@ if __name__ == "__main__":
     from utils.camera import Realsense
     camera = Realsense.default_real("fxm")
     overrides = [
-        # choose variant left+right+raw
+        # uncomment if you choose variant left+right+raw
         # "task=eval_ldm_mixed",
         # "task.resume_pretrained=experiments/ldm_sf-mixed.dep4.lr3e-05.v_prediction.nossi.scaled_linear.randn.nossi.my_ddpm1000.SceneFlow_Dreds_HssdIsaacStd.180x320.cond7-raw+left+right.w0.0/epoch_0199",
         
-        # choose variant rgb+raw
+        # uncomment if you choose variant rgb+raw
         "task=eval_ldm_mixed_rgb+raw",
         "task.resume_pretrained=experiments/ldm_sf-241212.2.dep4.lr3e-05.v_prediction.nossi.scaled_linear.randn.ddpm1000.Dreds_HssdIsaacStd_ClearPose.180x320.rgb+raw.w0.0/epoch_0056",
 

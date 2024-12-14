@@ -28,8 +28,19 @@ For more information, please visit our [**project page**](https://pku-epic.githu
 [Leonidas Guibas](https://geometry.stanford.edu/member/guibas/)
 [He Wang](https://hughw19.github.io/)
 
+
+ 
+## 💡 Updates (Dec 14, 2024)
+
+ - [x] We just release new model variant (Cond. on RGB+Raw), please checkout the updated inference.py
+ - [ ] Traning protocols and dataset
+
+
+
 Our method robustly predicts transparent (bottles) and specular (basin and cups) object depths in tabletop environments and beyond.
 ![teaser](assets/in-the-wild.png)
+
+
 
 #### INSTLLATION 
 ```
@@ -45,10 +56,12 @@ pip install hydra-core --upgrade
 
 
 #### DOWNLOAD PRE-TRAINED WEIGHT
-```
-https://drive.google.com/file/d/12BLB7mKDbLPhW2UuJSmYnwBFokOjDvC9/view?usp=sharing
 
-Extract it under the project folder
++ For model variant: Cond. Left+Right+Raw [Google drive](https://drive.google.com/file/d/12BLB7mKDbLPhW2UuJSmYnwBFokOjDvC9/view?usp=sharing), [百度云](https://pan.baidu.com/s/1u7n4wstGpqwAswp8ZbTNlw?pwd=o9nk)
++ For model variant: Cond. RGB+Raw [Google drive](https://drive.google.com/file/d/1cTAUZ2lXBXe4-peHLUneJ6ufQTqFr6E9/view?usp=drive_link), [百度云](https://pan.baidu.com/s/1zWwdMQ2_6-CViaC2JUGsFA?pwd=bwwb)
+```
+# Download pretrained weigths from Google Drive
+# Extract it under the project folder
 ```
 
 #### RUN INFERENCE
