@@ -184,7 +184,7 @@ class Normalizer():
             return (y - self.t) * self.s, None, None
 
     def __normalize(self, x):
-        x = torch.clamp(x, max=torch.sum(torch.tensor(self.ch_bounds, dtype=torch.float32)))
+        x = torch.clamp(x, max=torch.sum(torch.tensor(self.ch_bounds, dtype=torch.float32).to(x.device)))
         assert x.max() <= np.sum(self.ch_bounds), "out of bound"
         assert len(x.shape) == 3 # 1,H,W
 

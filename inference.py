@@ -5,8 +5,39 @@ import numpy as np
 from functools import partial
 from utils.camera import Realsense
 
+def denormalize(config, pred_disps, raw_disp=None, mask=None):
+    from utils.utils import Normalizer
+    norm = Normalizer.from_config(config)
+
+    if config.ssi:
+        # assert config.depth_channels == 1, "fixme"
+        B, R, H, W = pred_disps.shape
+        # scale-shift invariant evaluation, consider using config.safe_ssi if the ssi computation is not stable
+        batch_pred = pred_disps.reshape(-1, H*W) # BR, HW
+        batch_gt = raw_disp.repeat(1, R, 1, 1).reshape(-1, H*W) # BR, HW
+        batch_mask = mask.repeat(1, R, 1, 1).reshape(-1, H*W)
+        if config.safe_ssi:
+            from utils.ransac import RANSAC
+            regressor = RANSAC(n=0.1, k=10, d=0.2, t=config.ransac_error_threshold)
+            regressor.fit(batch_pred, batch_gt, batch_mask)
+            st = regressor.best_fit
+            print(f"safe ssi in on: n=0.1, k=10, d=0.2, t={config.ransac_error_threshold}")
+        else:
+            print("directly compute ssi")
+            from utils.utils import compute_scale_and_shift
+            st = compute_scale_and_shift(batch_pred, batch_gt, batch_mask) # BR, HW
+
+        s, t = torch.split(st.view(B, R, 1, 2), 1, dim=-1)
+        pred_disps_unnormalized = pred_disps * s + t
+    else:
+        pred_disps_unnormalized = norm.denormalize(pred_disps)
+
+    return pred_disps_unnormalized
+
 class D3RoMa():
-    def __init__(self, overrides=[], camera=None):
+    def __init__(self, overrides=[], camera=None, variant="left+right+raw"):
+        assert variant in ["left+right+raw", "rgb+raw"], "not implemented yet"
+
         from config import TrainingConfig, setup_hydra_configurations
         self.camera: Realsense = camera
 
@@ -23,14 +54,14 @@ class D3RoMa():
         self.camera.change_resolution(f"{config.image_size[1]}x{config.image_size[0]}")
         self.pipeline =  self._load_pipeline(config)
 
-        self.eval_output_dir = "_outputs"
+        self.eval_output_dir = f"_outputs.{variant}"
         if not os.path.exists(self.eval_output_dir):
             os.makedirs(self.eval_output_dir, exist_ok=True)
 
         from utils.utils import Normalizer
         self.normer = Normalizer.from_config(config)
         self.config = config
-        
+        self.variant = variant
 
     def _load_pipeline(self, config):
         patrained_path = f"{config.resume_pretrained}"
@@ -63,6 +94,43 @@ class D3RoMa():
             raise ValueError(f"patrained path not exists: {patrained_path}")
         
         return pipeline
+    
+    @torch.no_grad()
+    def infer_with_rgb_raw(self, rgb: np.ndarray, raw_depth: np.ndarray):
+        """Depth restoration with RGB and raw depth (RGB and depth SHOULD be aligned!)
+        
+        Args:
+            rgb (np.ndarray): RGB image or gray image
+            raw (np.ndarray): raw depth image from camera sensors, unit is meter
+
+        Returns:
+            np.ndarray: restored depth image, unit is meter
+        """
+
+        assert rgb.dtype == np.uint8
+        if len(rgb.shape[:2]) != len(raw_depth.shape[:2]):
+            rgb = cv2.resize(rgb, dsize=raw_depth.shape[:2][::-1], interpolation=cv2.INTER_LINEAR)
+
+        if len(rgb.shape) == 2:
+            # grayscale images
+            rgb = np.tile(rgb[...,None], (1, 1, 3))
+        else:
+            rgb = rgb[..., :3]
+        
+        rgb = cv2.resize(rgb, self.camera.resolution[::-1], interpolation=cv2.INTER_LINEAR)
+        rgb = torch.from_numpy(rgb).permute(2, 0, 1).float()
+
+        if len(raw_depth.shape) == 2:
+            raw_depth = raw_depth[...,None]
+        raw_depth = torch.from_numpy(raw_depth).permute(2, 0, 1).float()
+
+        assert self.config.prediction_space == "disp", "not implemented"
+        raw_disp = torch.zeros_like(raw_depth)
+        raw_valid = (raw_depth > 0)
+        raw_disp[raw_valid] = self.camera.fxb_depth / raw_depth[raw_valid]
+        
+        # normalized_raw_disp = self.normer.normalize(raw_disp)[0]
+        return self.run_pipeline(None, None, raw_disp, rgb)
 
     @torch.no_grad()
     def infer(self, left: np.ndarray, right: np.ndarray, raw_depth: np.ndarray=None, rgb:np.ndarray=None):
@@ -117,56 +185,34 @@ class D3RoMa():
         raw_valid = (raw_depth > 0)
         raw_disp[raw_valid] = self.camera.fxb_depth / raw_depth[raw_valid]
         
-        normalized_raw_disp = self.normer.normalize(raw_disp)[0] # normalized sim disp
         assert left.shape[1] % 8 == 0 and left.shape[2] % 8 == 0, "image size must be multiple of 8"
+        return self.run_pipeline(left, right, raw_disp, rgb)
         
+    def run_pipeline(self, left_image, right_image, raw_disp, rgb):
+        device = "cuda" if torch.cuda.is_available() else "cpu" # "cpu" #
         normalize_rgb_fn = lambda x: (x / 255. - 0.5) * 2
-
-        normalized_rgb = normalize_rgb_fn(rgb).to("cuda")
-        left_image = normalize_rgb_fn(left).to("cuda")
-        right_image = normalize_rgb_fn(right).to("cuda")
-        raw_disp = raw_disp.to("cuda")
-
-        def denormalize(config, pred_disps, raw_disp=None, mask=None):
-            from utils.utils import Normalizer
-            norm = Normalizer.from_config(config)
-
-            if config.ssi:
-                # assert config.depth_channels == 1, "fixme"
-                B, R, H, W = pred_disps.shape
-                # scale-shift invariant evaluation, consider using config.safe_ssi if the ssi computation is not stable
-                batch_pred = pred_disps.reshape(-1, H*W) # BR, HW
-                batch_gt = raw_disp.repeat(1, R, 1, 1).reshape(-1, H*W) # BR, HW
-                batch_mask = mask.repeat(1, R, 1, 1).reshape(-1, H*W)
-                if config.safe_ssi:
-                    from utils.ransac import RANSAC
-                    regressor = RANSAC(n=0.1, k=10, d=0.2, t=config.ransac_error_threshold)
-                    regressor.fit(batch_pred, batch_gt, batch_mask)
-                    st = regressor.best_fit
-                    print(f"safe ssi in on: n=0.1, k=10, d=0.2, t={config.ransac_error_threshold}")
-                else:
-                    print("directly compute ssi")
-                    from utils.utils import compute_scale_and_shift
-                    st = compute_scale_and_shift(batch_pred, batch_gt, batch_mask) # BR, HW
-
-                s, t = torch.split(st.view(B, R, 1, 2), 1, dim=-1)
-                pred_disps_unnormalized = pred_disps * s + t
-            else:
-                pred_disps_unnormalized = norm.denormalize(pred_disps)
-
-            return pred_disps_unnormalized
         
-        denorm = partial(denormalize, self.config)
-        mask = (raw_disp > 0).float().to("cuda")
-        self.pipeline.set_progress_bar_config(desc=f"Denoising")
+        #  batchify
+        if rgb is not None:
+            normalized_rgb = normalize_rgb_fn(rgb).to(device)
+            normalized_rgb = normalized_rgb.unsqueeze(0).repeat(self.config.num_inference_rounds, 1, 1, 1)
 
-        # batchify
-        normalized_rgb = normalized_rgb.unsqueeze(0).repeat(self.config.num_inference_rounds, 1, 1, 1)
-        left_image = left_image.unsqueeze(0).repeat(self.config.num_inference_rounds, 1, 1, 1)
-        right_image = right_image.unsqueeze(0).repeat(self.config.num_inference_rounds, 1, 1, 1)
+        if left_image is not None and right_image is not None:
+            left_image = normalize_rgb_fn(left_image).to(device)
+            right_image = normalize_rgb_fn(right_image).to(device)
+
+            left_image = left_image.unsqueeze(0).repeat(self.config.num_inference_rounds, 1, 1, 1)
+            right_image = right_image.unsqueeze(0).repeat(self.config.num_inference_rounds, 1, 1, 1)
+
+        raw_disp = raw_disp.to(device)
+        normalized_raw_disp = self.normer.normalize(raw_disp)[0] # normalized sim disp
         normalized_raw_disp = normalized_raw_disp.unsqueeze(0).repeat(self.config.num_inference_rounds, 1, 1, 1)
+
         raw_disp = raw_disp.unsqueeze(0).repeat(self.config.num_inference_rounds, 1, 1, 1)
-        mask = mask.unsqueeze(0).repeat(self.config.num_inference_rounds, 1, 1, 1)
+        mask = (raw_disp > 0).float()
+
+        denorm = partial(denormalize, self.config)
+        self.pipeline.set_progress_bar_config(desc=f"Denoising")
 
         pred_disps = self.pipeline(normalized_rgb, left_image, right_image, normalized_raw_disp, raw_disp, mask,
                 num_inference_steps=self.config.num_inference_timesteps,
@@ -208,8 +254,15 @@ if __name__ == "__main__":
     from utils.camera import Realsense
     camera = Realsense.default_real("fxm")
     overrides = [
-        "task=eval_ldm_mixed",
-        "task.resume_pretrained=experiments/ldm_sf-mixed.dep4.lr3e-05.v_prediction.nossi.scaled_linear.randn.nossi.my_ddpm1000.SceneFlow_Dreds_HssdIsaacStd.180x320.cond7-raw+left+right.w0.0/epoch_0199",
+        # choose variant left+right+raw
+        # "task=eval_ldm_mixed",
+        # "task.resume_pretrained=experiments/ldm_sf-mixed.dep4.lr3e-05.v_prediction.nossi.scaled_linear.randn.nossi.my_ddpm1000.SceneFlow_Dreds_HssdIsaacStd.180x320.cond7-raw+left+right.w0.0/epoch_0199",
+        
+        # choose variant rgb+raw
+        "task=eval_ldm_mixed_rgb+raw",
+        "task.resume_pretrained=experiments/ldm_sf-241212.2.dep4.lr3e-05.v_prediction.nossi.scaled_linear.randn.ddpm1000.Dreds_HssdIsaacStd_ClearPose.180x320.rgb+raw.w0.0/epoch_0056",
+
+        # rest of the configurations
         "task.eval_num_batch=1",
         "task.image_size=[360,640]", 
         "task.eval_batch_size=1",
@@ -225,7 +278,7 @@ if __name__ == "__main__":
             "task.flow_guidance_weights=[1.0]"
         ] """
 
-    droma = D3RoMa(overrides, camera)
+    droma = D3RoMa(overrides, camera, variant="rgb+raw")
 
     from PIL import Image
     from hydra.utils import to_absolute_path
@@ -234,8 +287,22 @@ if __name__ == "__main__":
     raw = np.array(Image.open(to_absolute_path("./assets/examples/0000_depth.png"))) * 1e-3
     rgb = np.array(Image.open(to_absolute_path("./assets/examples/0000_rgb.png")))
 
+    if droma.variant == "rgb+raw":
+        depth_aligned = camera.transform_depth_to_rgb_frame(raw) #if not alreay aligned
+        if True: # visualize aligned depth for realsense d415
+            valid = (depth_aligned > 0.2) & (depth_aligned < 5)
+            import matplotlib.pyplot as plt
+            cmap_spectral = plt.get_cmap('Spectral')
+            raw_depth_normalized = np.zeros_like(depth_aligned)
+            raw_depth_normalized[valid] = (depth_aligned[valid] - depth_aligned[valid].min()) / (depth_aligned[valid].max() - depth_aligned[valid].min())
+            Image.fromarray((cmap_spectral(raw_depth_normalized)*255.)[...,:3].astype(np.uint8)).save(f"raw_aligned.png")
 
-    pred_depth = droma.infer(left, right, raw, rgb)
+        pred_depth = droma.infer_with_rgb_raw(rgb, depth_aligned)
+        # if droma.config.write_pcd:
+    elif droma.variant == "left+right+raw":
+        pred_depth = droma.infer(left, right, raw, rgb)
+    else:
+        raise NotImplementedError
 
     import matplotlib.pyplot as plt
     cmap_spectral = plt.get_cmap('Spectral')
@@ -249,6 +316,7 @@ if __name__ == "__main__":
         gt_depth_np[~gt_masks_np] = 0.0
         gt_depth_np = camera.transform_depth_to_rgb_frame(gt_depth_np) #if not alreay aligned
         viz_cropped_pointcloud(camera.K.arr, rgb, gt_depth_np, fname=f"{droma.eval_output_dir}/raw.ply")
-                           
-        pred_depth = camera.transform_depth_to_rgb_frame(pred_depth)
+
+        if droma.variant == "left+right+raw":
+            pred_depth = camera.transform_depth_to_rgb_frame(pred_depth)
         viz_cropped_pointcloud(camera.K.arr, rgb, pred_depth, fname=f"{droma.eval_output_dir}/pred.ply")
