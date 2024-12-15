@@ -2,7 +2,7 @@ datasets*
 **/*.pyc
 experiments*
 checkpoint
-_outputs
+_outputs*
 _outputs/**
 checkpoint/**
 test_*
