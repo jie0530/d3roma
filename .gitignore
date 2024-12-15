@@ -8,3 +8,4 @@ checkpoint/**
 test_*
 backup
 bad_sim*
+.vscode
