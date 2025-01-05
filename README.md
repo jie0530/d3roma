@@ -266,7 +266,7 @@ If you want to parallel evaluation on test datasets:
 accelerate launch distributed_evaluate.py task=...
 ```
 
-## Reproducing results on in Paper
+## Reproducing results in Paper
 ```
 accelerate launch train.py task=train_dreds_reprod
 
