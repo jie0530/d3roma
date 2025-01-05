@@ -259,7 +259,7 @@ accelerate launch train.py \
 tensorboard --logdir experiments --port 20000
 ```
 
-##### 5. Distributed Evaluation
+#### 6. Distributed Evaluation
 
 If you want to parallel evaluation on test datasets:
 ```
