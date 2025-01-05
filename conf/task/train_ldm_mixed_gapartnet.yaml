@@ -11,8 +11,8 @@ camera_resolution: 320x180 #  W,H
 # camera_resolution: 480x270 #  W,H
 image_size: [180,320] # H,W
 # image_size: [270,480] # H,W
-train_dataset: [SceneFlow, Dreds, HssdIsaacStd, Gapartnet2]
-eval_dataset: [SceneFlow, Dreds, HssdIsaacStd, Gapartnet2, Real]
+train_dataset: [SceneFlow, Dreds, HISS, Gapartnet2]
+eval_dataset: [SceneFlow, Dreds, HISS, Gapartnet2, Real]
 dataset_weight: [1, 1, 1, 1] 
 train_batch_size: 16
 gradient_accumulation_steps: 1

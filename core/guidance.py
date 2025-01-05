@@ -5,7 +5,6 @@ import torch.nn.functional as F
 import numpy as np
 from diffusers.models import ModelMixin
 from diffusers.configuration_utils import ConfigMixin
-from core.stereo_matching import StereoMatching
 from utils.camera import Realsense
 from utils.ransac import RANSAC, ScaleShiftEstimator, square_error_loss, mean_absolute_error
 from utils.utils import compute_scale_and_shift
@@ -112,12 +111,12 @@ class FlowGuidance(ModelMixin, ConfigMixin):
         self.proj = Project3D() #B, H, W
         self.ssim = SSIM()
 
-        self.stereo_matcher = StereoMatching(maxDisp=110, #math.ceil(camera.max_disp),
-                                             minDisp=10, #math.floor(camera.min_disp), 
-                                             blockSize=11, 
-                                             eps=1e-6, 
-                                             subPixel=True,
-                                             bilateralFilter=False)
+        # self.stereo_matcher = StereoMatching(maxDisp=110, #math.ceil(camera.max_disp),
+        #                                      minDisp=10, #math.floor(camera.min_disp), 
+        #                                      blockSize=11, 
+        #                                      eps=1e-6, 
+        #                                      subPixel=True,
+        #                                      bilateralFilter=False)
         
         self.guidance_image = None
         
@@ -297,6 +296,7 @@ class FlowGuidance(ModelMixin, ConfigMixin):
             device = disp_raw.device
 
             with torch.enable_grad():
+                w = 0.95
                 disp_raw.requires_grad_(True)
                 # disp = unnormalize_disp(disp_raw, self.min_disp, self.max_disp, self.shift)
                 disp = self.camera.unnormalize_disp(disp_raw)
@@ -345,7 +345,8 @@ class FlowGuidance(ModelMixin, ConfigMixin):
 
             optimizer = torch.optim.SGD([disp_raw], lr=lr, momentum=0.9)
 
-            disp = unnormalize_disp(disp_raw, min_disp, max_disp, shift)
+            # denormalize
+            disp = disp_raw * (max_disp - min_disp) + min_disp + shift
             B, H, W = disp.shape
             device = disp_raw.device
             for _ in range(iter):

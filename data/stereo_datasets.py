@@ -437,7 +437,7 @@ class ActiveStereoDataset(StereoDataset):
             return depth
 
         depth = read_depth(self.depth_list[index])
-        if self.__class__.__name__ in (["HssdIsaacStd", "Gapartnet2"]) and self.space == "depth" and False:
+        if self.__class__.__name__ in (["HISS", "Gapartnet2"]) and self.space == "depth" and False:
             depth[...,0] = frame_utils.interpolate_missing_pixels(depth[...,0], (~valid), "nearest")
 
         depth = torch.from_numpy(depth).permute(2, 0, 1).float() # [1,h,w]
@@ -509,7 +509,8 @@ class ActiveStereoDataset(StereoDataset):
             sim_disp = torch.zeros_like(raw_depth)
             sim_valid = valid.to(torch.bool) & (raw_depth > 0)
             if sim_valid.sum() == 0:
-                raise ValueError(f"no valid sim data at {index}: {self.raw_depth_list[index]}")
+                # raise ValueError(f"no valid sim data at {index}: {self.raw_depth_list[index]}")
+                print(f"warning: no valid sim data at {index}: {self.raw_depth_list[index]}")
             sim_disp[sim_valid] = self.camera.fxb_depth / raw_depth[sim_valid]
             # raw_depth = sim_disp # ugly hack, for guidance?
             normalized_sim = self.normalizer.normalize(sim_disp, sim_valid, low=low, up=up)[0]
@@ -581,11 +582,11 @@ class Dreds(ActiveStereoDataset):
         assert len(self.rgb_list) == len(self.depth_list) == len(self.sim_disparity_list) > 0, "no data found"
         
 
-class HssdIsaacStd(ActiveStereoDataset):
+class HISS(ActiveStereoDataset):
     def __init__(self, camera, normalizer, image_size, split="train", space="disp", aug_params=None, reader=None):
         super().__init__(camera, normalizer, image_size, split, space, aug_params, reader)
 
-        root = f"datasets/HssdIsaacStd/{split}"
+        root = f"datasets/HISS/{split}"
 
         # rgb_list = sorted(glob(osp.join(root, f'**/*color.png'), recursive=True))
         # image1_list = sorted(glob(osp.join(root, f'**/*ir_l*'), recursive=True))
@@ -603,7 +604,8 @@ class HssdIsaacStd(ActiveStereoDataset):
             self.bad_paths = [path.split(' ')[0] for path in bad_paths]
 
         for depth in depth_list:
-            if "glass" in depth or "mirror" in depth or "bed" in depth: continue
+            if "glass" in depth or "mirror" in depth or "bed" in depth: 
+                continue
             if depth in self.bad_paths: # .replace("depth", "disp")
                 continue
 

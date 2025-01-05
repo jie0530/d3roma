@@ -2,7 +2,7 @@ defaults:
   - train_ldm_mixed_cond_rgbd
 
 name: ldm_sf
-resume_pretrained: experiments/ldm_sf-0807.dep4.lr3e-05.v_prediction.nossi.scaled_linear.randn.ddpm1000.ClearPose_Dreds_HssdIsaacStd.240x320.rgb+raw.w0.0/best
+resume_pretrained: experiments/ldm_sf-0807.dep4.lr3e-05.v_prediction.nossi.scaled_linear.randn.ddpm1000.ClearPose_Dreds_HISS.240x320.rgb+raw.w0.0/best
 camera_resolution: 320x240 #  WxH
 image_size: [240,320] # H,W
 eval_dataset: [ClearPose]

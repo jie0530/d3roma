@@ -1,3 +1,4 @@
+""" adpated from DREDS """
 import os
 import numpy as np
 from PIL import Image
@@ -9,6 +10,10 @@ from torch.autograd import Variable
 import time
 import kornia
 import copy
+from torch.utils.data import Dataset
+import glob
+import cv2
+os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 
 def GetGaussianKernel(ksize, sigma=0):
     if sigma <= 0:
@@ -183,6 +188,7 @@ def warp(x, flo):
     mask[mask > 0] = 1
     return output * mask
 
+
 def LRC(dispL, dispR):
     dispRClone = dispR.clone()
     dispSamplesX = dispL.permute(0, 2, 3, 1)
@@ -192,7 +198,7 @@ def LRC(dispL, dispR):
 
     wrapedDispR = warp(dispRClone, dispSamples)
     disp = dispL.clone()
-    disp[torch.pow((dispL - wrapedDispR), 2) > 0.1] = 0.0
+    disp[torch.pow((dispL - wrapedDispR), 2) > 0.5] = -1.0
     return disp
 
 
@@ -308,11 +314,51 @@ def perlin(x, y, seed=0):
     x2 = lerp(n01, n11, u)
     return lerp(x1, x2, v)
 
+
+def post_processing(disparity_map, diff_insame, min_speckle_aera):
+    B, C, H, W = disparity_map.shape
+
+    for b in range(B):
+        mask_visited = torch.zeros((H, W), device=disparity_map.device)
+        for i in range(H):
+            for j in range(W):
+                print(b, i, j)
+                if mask_visited[i, j] == 1 or disparity_map[b, :, i, j] < 0:
+                    continue
+                vec = []
+                vec.append([i, j])
+                mask_visited[i, j] = 1
+                cur = 0
+                next = 0
+                while True:
+                    next = len(vec)
+                    print(len(vec))
+                    for k in range(cur, next, 1):
+                        pixel = vec[k]
+                        row = pixel[0]
+                        col = pixel[1]
+                        disp_base = disparity_map[b, :, row, col]
+                        for r in range(-1, 2, 1):
+                            for c in range(-1, 2, 1):
+                                if r == 0 and c == 0:
+                                    continue
+                                rowr = row + r
+                                colc = col + c
+                                if rowr >= 0 and rowr < H and colc >= 0 and colc < W:
+                                    if mask_visited[rowr, colc] == 0 and torch.abs(disparity_map[b, :, rowr, colc] - disp_base) <= diff_insame:
+                                        vec.append([rowr, colc])
+                                        mask_visited[rowr, colc] = 1
+                    cur = next
+                    if next >= len(vec):
+                        break
+                if len(vec) < min_speckle_aera:
+                    for v in vec:
+                        disparity_map[b, :, v[0], v[1]] = -1.0
+    return disparity_map
+
+
 class StereoMatching(nn.Module):
-    def __init__(self, maxDisp = 60, minDisp = 1, blockSize = 9, eps = 1e-6, 
-                 subPixel = True, bilateralFilter = True,
-                 beta = 100., sigmaColor = 0.05, sigmaSpace = 5.
-                 ):
+    def __init__(self, maxDisp = 60, minDisp = 1, blockSize = 9, eps = 1e-6, subPixel = True, bilateralFilter = True):
         super(StereoMatching, self).__init__()
         self.maxDisp = maxDisp
         self.minDisp = minDisp
@@ -321,28 +367,13 @@ class StereoMatching(nn.Module):
         self.subPixel = subPixel
         self.bilateralFilter = bilateralFilter
 
-        # beta = torch.autograd.Variable(beta)
-        # sigmaColor = torch.autograd.Variable(sigmaColor)
-        # sigmaSpace = torch.autograd.Variable(sigmaSpace)
-
-        # self.beta = torch.autograd.Variable(torch.tensor(beta))
-        # self.sigmaColor = torch.autograd.Variable(torch.tensor(sigmaColor))
-        # self.sigmaSpace = torch.autograd.Variable(torch.tensor(sigmaSpace))
-
-        self.register_buffer("beta", torch.tensor(beta))
-        self.register_buffer("sigmaColor", torch.tensor(sigmaColor))
-        self.register_buffer("sigmaSpace", torch.tensor(sigmaSpace))
-
-    def forward(self, imageL, imageR ): # f, blDis
-        imageL = imageL.to(self.beta.device)
-        imageR = imageR.to(self.beta.device)
-        
-        # print("forward start")
-        # beginTime = time.time()
+    def forward(self, imageL, imageR, f, blDis, beta, sigmaColor=0.05, sigmaSpace=5):
+        print("forward start")
+        beginTime = time.time()
         # imageL = imageL.type(torch.FloatTensor).cuda()
         # imageR = imageR.type(torch.FloatTensor).cuda()
         B, C, H, W = imageL.shape
-        D = int(self.maxDisp - self.minDisp) + 1
+        D = self.maxDisp - self.minDisp + 1
         device = imageL.device
 
         if(self.maxDisp >= imageR.shape[3]):
@@ -391,23 +422,23 @@ class StereoMatching(nn.Module):
         cacheImageR = [imageR, imageRSum, imageRAve, imageRAve2, imageR2, imageR2Sum]
 
         # calculate costVolume
-        # testBeginTime = time.time()
+        testBeginTime = time.time()
         for i in range(self.minDisp, D + 1, 1):
             # ConcostVolume and dispVolume
             costVolumeL[i - self.minDisp] = CorrL(i, cacheImageL, cacheImageR, filters, padding, self.blockSize, self.eps)
             costVolumeR[i - self.minDisp] = CorrR(i, cacheImageL, cacheImageR, filters, padding, self.blockSize, self.eps)
             dispVolume[i - self.minDisp] = torch.full_like(costVolumeL[0], i)
 
-        # testEndTime = time.time()
-        # print("costVolume Time: ", testEndTime - testBeginTime)
+        testEndTime = time.time()
+        print("costVolume Time: ", testEndTime - testBeginTime)
 
         # calculate disparity map
-        # testBeginTime = time.time()
-        dispL = CostToDisp(costVolumeL, dispVolume, self.beta, self.eps, self.subPixel)
-        dispR = CostToDisp(costVolumeR, dispVolume, self.beta, self.eps, self.subPixel)
+        testBeginTime = time.time()
+        dispL = CostToDisp(costVolumeL, dispVolume, beta, self.eps, self.subPixel)
+        dispR = CostToDisp(costVolumeR, dispVolume, beta, self.eps, self.subPixel)
 
-        # testEndTime = time.time()
-        # print("costToDisp Time: ", testEndTime - testBeginTime)
+        testEndTime = time.time()
+        print("costToDisp Time: ", testEndTime - testBeginTime)
 
         # dispL[dispL < self.minDisp] = -1.0
         # dispL[dispL > self.maxDisp] = -1.0
@@ -420,26 +451,169 @@ class StereoMatching(nn.Module):
         if self.bilateralFilter == True:
             # disp: torch.Tensor = kornia.median_blur(disp, (5, 5))
             disp = kornia.filters.median_blur(disp, (5, 5))
-            disp = BilateralFilter(disp, 7, sigmaColor=self.sigmaColor * D, sigmaSpace=self.sigmaSpace)
+            disp = BilateralFilter(disp, 7, sigmaColor=sigmaColor * D, sigmaSpace=sigmaSpace)
 
-        # disp[disp < self.minDisp] = .0
-        # disp[disp > self.maxDisp] = .0
-        # valid = torch
-        valid = (disp > self.minDisp) & (disp < self.maxDisp)
-        disp[~valid] = 0.
-
-        return disp, valid
+        disp[disp < self.minDisp] = -1.0
+        disp[disp > self.maxDisp] = -1.0
         # disp = post_processing(disp, 2, 100)
         # disparity to depth
-        # depthImage = DispToDepth(disp, f, blDis, self.eps)  # [B H W]
+        depthImage = DispToDepth(disp, f, blDis, self.eps)  # [B H W]
 
-        # # depthImage[depthImage > 4000] = 0.0
-        # depthImage[depthImage < 0] = 0.0
-        # depthImage[depthImage > 5.0] = 0.0
+        # depthImage[depthImage > 4000] = 0.0
+        depthImage[depthImage < 0] = -0.001
+        depthImage[depthImage > 3.5] = -0.001
 
-        # # # depth to point cloud
-        # # pointCloud = DepthToPointCloud(depthImage, f)
-        # endTime = time.time()
-        # print("forward finish")
-        # print("forward time: ", endTime - beginTime)
-        # return depthImage, None # pointCloud
+        # depth to point cloud
+        pointCloud = DepthToPointCloud(depthImage, f)
+        endTime = time.time()
+        print("forward finish")
+        print("forward time: ", endTime - beginTime)
+        return depthImage, pointCloud, disp
+
+
+class DREDS(Dataset):
+    def __init__(self, root, scale):
+        self.root = root
+        self.scale = scale
+        self.ir_l_list = []
+        self.ir_r_list = []
+        self.depth_list = []
+        for img_id in sorted(glob.glob(self.root+"/*_ir_l.png")):
+            if not os.path.exists(img_id[:-8] + "simDepthImage.exr"):
+                path = img_id[:-8]
+
+                imageL = np.array(Image.open(path + "ir_l.png").convert("L"))
+                if imageL.shape[-1] != 1280:
+                    continue
+                
+                self.ir_l_list.append(path + "ir_l.png")
+                self.ir_r_list.append(path + "ir_r.png")
+                self.depth_list.append(path + "depth_120.exr")
+        print(self.ir_l_list, self.ir_r_list, self.depth_list)
+
+    def __getitem__(self, index):
+        # read ir image to tensor
+        ir_l_path = self.ir_l_list[index]
+        ir_r_path = self.ir_r_list[index]
+        imageL = Image.open(ir_l_path).convert("L")
+        imageR = Image.open(ir_r_path).convert("L")
+        imageL = np.array(imageL.resize((int(imageL.size[0] * self.scale), int(imageL.size[1] * self.scale)))).astype(np.float32)
+        imageR = np.array(imageR.resize((int(imageR.size[0] * self.scale), int(imageR.size[1] * self.scale)))).astype(np.float32)
+        imageL = np.array([imageL]).transpose(1, 2, 0)
+        imageR = np.array([imageR]).transpose(1, 2, 0)
+        imageLTensor = torch.from_numpy(imageL.transpose(2, 0, 1))
+        imageRTensor = torch.from_numpy(imageR.transpose(2, 0, 1))
+
+        # read depth to tensor
+        depth_image_path = self.depth_list[index]
+        if os.path.exists(depth_image_path):
+            image = cv2.imread(depth_image_path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+            depth_array = image[:, :, 0]
+            depthTensor = torch.from_numpy(depth_array).unsqueeze(0)
+        else:
+            depthTensor = np.zeros((1, imageL.shape[0], imageL.shape[1])).astype(np.float32)
+        return imageLTensor, imageRTensor, ir_l_path, ir_r_path, depthTensor
+
+    def __len__(self):
+        return len(self.ir_l_list)
+
+
+def main_batch(input_root, f, b):
+    ###########################
+    # Parameter setting
+    ###########################
+    scale = 1                             # image scale
+    beta = torch.tensor(100.)               # beta para of softArgmax
+    blockSize =11                           # stereo matching para
+    maxDisp = 110                           # max disparity between left and right images
+    minDisp = 3                             # min disparity between left and right images
+    f = torch.tensor(f)                # focal length of the sensor
+    baselineDis = torch.tensor(b)       # baseline distance of the sensor
+    subPixel = True                         # whether to calculate subpixel
+    bilateralFilter = True                  # whether to use bilateral filter
+    sigmaColor = torch.tensor(0.02)         # color para of bilateral filter
+    sigmaSpace = torch.tensor(3.)           # space para of bilateral filter
+    gpu_id = 0
+    batch_size = 4
+    save_root = copy.copy(input_root)
+    # input_root = "./rendered_output"
+    # save_root = "./rendered_output"
+
+    ###########################
+    # Main
+    ###########################
+    torch.cuda.set_device(gpu_id)
+
+    
+
+    maxDepth = f * baselineDis / minDisp
+    minDepth = f * baselineDis / maxDisp
+    print(f"minDepth={minDepth:.2f}, maxDepth={maxDepth:.2f}")
+
+    DREDS_DATASET = DREDS(root=input_root, scale=scale)
+    print("Len: ", len(DREDS_DATASET))
+    DataLoader = torch.utils.data.DataLoader(DREDS_DATASET, batch_size=batch_size, shuffle=False, num_workers=8)
+
+    beta = torch.autograd.Variable(beta)
+    sigmaColor = torch.autograd.Variable(sigmaColor)
+    sigmaSpace = torch.autograd.Variable(sigmaSpace)
+
+    object = StereoMatching(maxDisp=maxDisp, minDisp=minDisp, blockSize=blockSize, eps=1e-6, subPixel=subPixel,
+                            bilateralFilter=bilateralFilter)
+
+    for i, (imageLTensor, imageRTensor, ir_l_path, ir_r_path, depthTensor) in enumerate(DataLoader):
+    # for i, (imageLTensor, imageRTensor, ir_l_path, ir_r_path) in enumerate(DataLoader):
+        if torch.cuda.is_available():
+            print("using cuda")
+            imageLTensor = imageLTensor.cuda()
+            imageRTensor = imageRTensor.cuda()
+            depthTensor = depthTensor.cuda()
+            beta = beta.cuda()
+            sigmaColor = sigmaColor.cuda()
+            sigmaSpace = sigmaSpace.cuda()
+            f = f.cuda()
+            baselineDis = baselineDis.cuda()
+
+        # stereo matching
+        depthImage, pointCloud, disp = object(imageLTensor, imageRTensor, f, baselineDis, beta, sigmaColor, sigmaSpace)    # [B C H W]
+
+        # Plotting
+        for i in range(imageLTensor.shape[0]):
+            save_dir = os.path.join(save_root, ir_l_path[i].split("/")[-2])
+
+            depthImageExr = depthImage[i].squeeze().data.cpu().numpy().astype("float32")
+            depthImageExr = np.stack((depthImageExr,)*3, axis=-1)
+            
+            cv2.imwrite(save_dir[:save_dir.rfind('/')] + "/%s_simDepthImage.exr"%ir_l_path[i].split("/")[-1][:4], depthImageExr)
+            disp_uint8 = np.round(np.clip(disp[i,0].cpu().numpy(), 0, 255)).astype(np.uint8)
+            cv2.imwrite(save_dir[:save_dir.rfind('/')] + "/%s_simDispImage.png"%ir_l_path[i].split("/")[-1][:4],disp_uint8)
+
+            print(save_dir[:save_dir.rfind('/')] + "/%s_simDepthImage.exr"%ir_l_path[i].split("/")[-1][:4])
+
+def force_cudnn_initialization():
+    s = 32
+    dev = torch.device('cuda')
+    torch.nn.functional.conv2d(torch.zeros(s, s, s, s, device=dev), torch.zeros(s, s, s, s, device=dev))
+
+
+from pathlib import Path
+from hydra.utils import to_absolute_path
+
+
+def run(cfg):
+    fx = 446.31 # the focal length of the camera used by DREDS dataset
+    b = 0.055 # baseline used to convert depth to disparity
+    force_cudnn_initialization()
+
+    # SONGLIN: PAY CLOSE ATTENTION TO THESE PARAMETERS
+    # 1. resolution (640 / 1280)
+    # 2. fx and b
+    # 3. path pattern of glob function when used for loading images
+    output_dir = Path(to_absolute_path("datasets/HISS/train"))
+    
+    for scene in output_dir.iterdir():
+        if scene.is_dir():
+            main_batch(str(scene), fx, b) #
+
+if __name__ == "__main__":
+    run()

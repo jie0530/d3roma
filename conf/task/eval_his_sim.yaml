@@ -5,7 +5,7 @@ resume_pretrained:
 camera_resolution: 224x126 #  WxH
 image_size: [126, 224] # H,W
 safe_ssi: true
-eval_dataset: [HssdIsaacStd]
+eval_dataset: [HISS]
 eval_num_batch: -1
 eval_batch_size: 32
 sampler: my_ddpm

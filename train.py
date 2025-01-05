@@ -286,7 +286,7 @@ def train_step(accelerator, config: TrainingConfig, model, optimizer, lr_schedul
             inputs = torch.cat([noisy_images, final_rgb, cond_sim], dim=1)
         elif config.cond_channels == "left+right":
             inputs = torch.cat([noisy_images, left_image, right_image], dim=1)
-        elif config.cond_channels == "left+right+raw": # 8
+        elif config.cond_channels == "left+right+raw":
             inputs = torch.cat([noisy_images, left_image, right_image, cond_sim], dim=1)
         elif config.cond_channels == "rgb+left+right":
             inputs = torch.cat([noisy_images, final_rgb, left_image, right_image], dim=1)

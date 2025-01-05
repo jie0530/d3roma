@@ -10,8 +10,8 @@ camera_resolution: 224x126 #  WxH
 image_size: [126, 224] # H,W
 ssi: true
 safe_ssi: true
-train_dataset: [HssdIsaacStd]
-eval_dataset: [HssdIsaacStd]
+train_dataset: [HISS]
+eval_dataset: [HISS]
 normalize_mode: average
 ch_bounds: [64.]
 ch_gammas: [1.]

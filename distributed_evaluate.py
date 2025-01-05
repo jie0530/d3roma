@@ -7,7 +7,6 @@ from tqdm import tqdm
 
 from core.custom_pipelines import GuidedLatentDiffusionPipeline
 from accelerate import Accelerator, PartialState
-from core.stereo_matching import StereoMatching
 from core.guidance import FlowGuidance
 import numpy as np
 from utils.utils import seed_everything

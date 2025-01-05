@@ -10,7 +10,6 @@ from data.stereo_datasets import *
 from data.mono_datasets import *
 
 from accelerate import Accelerator
-from core.stereo_matching import StereoMatching
 from core.guidance import FlowGuidance
 import numpy as np
 from utils.utils import seed_everything, make_image_grid__, debug_stat
@@ -251,8 +250,8 @@ def eval_sliced_batch(pipeline, config, mini_batch, stat, eval_output_dir, abnor
                     pred_depth[pred_mask_np] = fxb[b].cpu().numpy() / pred_disps[b][pred_mask_np] # [H,W]
 
                     # hack for simulation
-                    if config.eval_dataset[0] == "HssdIsaacStd" and config.eval_split == "simulation2":
-                        cv2.imwrite(f"datasets/HssdIsaacStd/simulation2/{mini_batch['index'][b]:04d}_pred.exr", pred_depth)
+                    if config.eval_dataset[0] == "HISS" and config.eval_split == "simulation2":
+                        cv2.imwrite(f"datasets/HISS/simulation2/{mini_batch['index'][b]:04d}_pred.exr", pred_depth)
 
                 elif config.prediction_space == "depth":
                     pred_mask_np = (pred_disps[b] > camera.min_depth) & (pred_disps[b] < camera.max_depth)

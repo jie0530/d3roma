@@ -9,9 +9,9 @@ divis_by: 8
 prediction_space: disp
 camera_resolution: 480x270 #  W,H
 image_size: [180,320] # H,W
-train_dataset: [Dreds, HISS, ClearPose]
-dataset_weight: [1,1,1] 
-eval_dataset: [Dreds, HISS, Real_xiaomeng_fxm]
+train_dataset: [SceneFlow, Dreds, HISS]
+dataset_weight: [1,1,1]
+eval_dataset: [SceneFlow, Dreds, HISS, Real_xiaomeng_fxm]
 train_batch_size: 16
 gradient_accumulation_steps: 1
 eval_num_batch: -1
@@ -35,7 +35,7 @@ loss_type: mse
 prediction_type: v_prediction
 sampler: ddpm
 num_epochs: 200
-cond_channels: rgb+raw
+cond_channels: left+right+raw
 beta_schedule: scaled_linear
 beta_start: 0.00085
 beta_end: 0.012

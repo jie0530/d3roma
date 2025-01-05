@@ -2,7 +2,7 @@ defaults:
   - train_clearpose
 
 name: clearpose
-resume_pretrained: experiments/clearpose-0809.dep1.lr1e-04.sample.ssi.squaredcos_cap_v2.pyramid.my_ddpm128.ClearPose_Dreds_HssdIsaacStd.240x320.rgb+raw.w0.0/best
+resume_pretrained: experiments/clearpose-0809.dep1.lr1e-04.sample.ssi.squaredcos_cap_v2.pyramid.my_ddpm128.ClearPose_Dreds_HISS.240x320.rgb+raw.w0.0/best
 eval_num_batch: -1
 camera_resolution: 320x240 #  WxH
 image_size: [240,320] # H,W

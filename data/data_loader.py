@@ -8,7 +8,7 @@ from utils.camera import Realsense, RGBDCamera
 
 def create_dataset(config: TrainingConfig, dataset_name, split = "train"):
     mono_lst = ['NYUv2', 'ScanNet', 'HyperSim', 'SceneNet', 'ScanNetpp', 'VK2', 'KITTI', "Middlebury", "InStereo2K", "Tartenair", "HRWSI", "SynTODD"]
-    stereo_lst = ["Dreds",  "Middlebury", "SceneFlow", "Real", "HssdIsaacStd", "ClearPose", "SynTODDRgbd", "Gapartnet2"]
+    stereo_lst = ["Dreds",  "Middlebury", "SceneFlow", "Real", "HISS", "ClearPose", "SynTODDRgbd", "Gapartnet2"]
     image_size = tuple(config.image_size)
 
     if len(dataset_name.split("_")) > 1: # Real_split_device
@@ -37,12 +37,12 @@ def create_dataset(config: TrainingConfig, dataset_name, split = "train"):
                 final_dataset = SceneFlow(aug_params=aug_params, root="datasets/sceneflow", dstype='frames_finalpass', 
                                                 reader=disp_reader, normalizer=normalizer)
                 dataset = clean_dataset + final_dataset
-            elif dataset_name == 'HssdIsaacStd':
+            elif dataset_name == 'HISS':
                 sim_camera = DepthCamera.from_device("sim") # BUG? max depth=5.
                 # sim_camera.change_resolution(f"{config.image_size[1]}x{config.image_size[0]}")
                 sim_camera.change_resolution(config.camera_resolution)
                 disp_reader = partial(frame_utils.readDispReal, sim_camera)
-                dataset = HssdIsaacStd(sim_camera, normalizer, image_size, split, config.prediction_space, aug_params, reader=disp_reader)
+                dataset = HISS(sim_camera, normalizer, image_size, split, config.prediction_space, aug_params, reader=disp_reader)
             elif dataset_name == "Dreds":
                 sim_camera = Realsense.default_sim() # BUG? max depth=2.
                 # sim_camera.change_resolution(f"{image_size[1]}x{image_size[0]}")
@@ -73,11 +73,11 @@ def create_dataset(config: TrainingConfig, dataset_name, split = "train"):
                 disp_reader = partial(frame_utils.read_sceneflow, cam_res)
                 dataset = SceneFlow(root="datasets/sceneflow", dstype='frames_cleanpass', things_test=True, 
                                             reader=disp_reader, normalizer=normalizer)
-            elif dataset_name == "HssdIsaacStd":
+            elif dataset_name == "HISS":
                 sim_camera = Realsense.from_device("sim")
                 sim_camera.change_resolution(f"{config.image_size[1]}x{config.image_size[0]}")
                 disp_reader = partial(frame_utils.readDispReal, sim_camera)
-                dataset = HssdIsaacStd(sim_camera, normalizer, image_size, split, space=config.prediction_space, reader=disp_reader)
+                dataset = HISS(sim_camera, normalizer, image_size, split, space=config.prediction_space, reader=disp_reader)
             elif dataset_name == "Dreds": 
                 sim_camera = Realsense.default_sim()
                 sim_camera.change_resolution(f"{image_size[1]}x{image_size[0]}")

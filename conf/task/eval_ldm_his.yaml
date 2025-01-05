@@ -5,7 +5,7 @@ name: ldm_his
 resume_pretrained: 
 camera_resolution: 640x360 #  W,H
 image_size: [180, 320] # H,W
-eval_dataset: [HssdIsaacStd]
+eval_dataset: [HISS]
 eval_num_batch: -1
 eval_batch_size: 4
 num_inference_timesteps: 10

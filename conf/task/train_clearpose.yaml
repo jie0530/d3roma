@@ -10,8 +10,8 @@ camera_resolution: 320x240 #  WxH
 image_size: [240, 320] # H,W
 ssi: true
 safe_ssi: false
-train_dataset: [ClearPose, Dreds, HssdIsaacStd] # [Dreds] #
-eval_dataset: [ClearPose, Dreds, HssdIsaacStd] # [Dreds] #
+train_dataset: [ClearPose, Dreds, HISS] # [Dreds] #
+eval_dataset: [ClearPose, Dreds, HISS] # [Dreds] #
 dataset_weight: [1, 1, 1] # [1] #
 normalize_mode: average
 ch_bounds: [64.]

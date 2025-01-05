@@ -9,8 +9,8 @@ divis_by: 8
 prediction_space: disp
 camera_resolution: 320x240 #  WxH
 image_size: [240,320] # H,W
-train_dataset: [ClearPose, Dreds, HssdIsaacStd] # [Dreds] #
-eval_dataset: [ClearPose, Dreds, HssdIsaacStd] # [Dreds] #
+train_dataset: [ClearPose, Dreds, HISS] # [Dreds] #
+eval_dataset: [ClearPose, Dreds, HISS] # [Dreds] #
 dataset_weight: [1, 1, 1] # [1] #
 train_batch_size: 16
 gradient_accumulation_steps: 1
