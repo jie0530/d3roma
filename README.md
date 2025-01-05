@@ -42,7 +42,7 @@ Our method robustly predicts transparent (bottles) and specular (basin and cups)
 
 
 
-## INSTLLATION 
+## INSTALLATION 
 ```
 conda create --name d3roma python=3.8
 conda activate d3roma
