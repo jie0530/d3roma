@@ -1,0 +1,154 @@
+launch_config:
+  renderer: PathTracing #RayTracedLighting #
+  headless: true #  false # 
+
+# Controls lightings for rendering images, 
+# rgb: color image only
+# ir: ir depth image only 
+# rgb+ir: iteratively render rgb and ir images
+# na: don't render images with replicators
+render_mode: rgb+ir #  gt+rgb+ir # rgb+ir # rgb # ir # 
+
+# Controls the simulation mode
+# layout_n_capture: init scene and capture images then quit
+# load_n_render: TODO load scene and render images
+# simulate: normal simulation mode
+
+sim_mode: load_n_render #  layout_n_capture # simulate #   
+
+resume_scene: 
+
+robot:
+  name: "franka.yml" #"galbot_zero_lefthand.yml" #
+  init_pose: [-0.2, 0., 0., 1, 0, 0, 0] #[0.0, 0.5, 0.0] # usually look at, , 0.707, 0.0, 0.0, -0.707
+
+scene: empty #hssd # 
+layout: part # dreds #  graspnet  # 
+
+dreds:
+  cad_model_dir: data/dreds
+  layout_offset: [0.2, 0.0, 0.0]
+
+graspnet:
+  root_path: data/graspnet
+  layout_offset: [0.5, 0.2, 0.0]
+
+hssd:
+  data_dir: data/hssd/scenes
+  name: "107734119_175999932"
+  default_prim_path: "/World/scene"
+  scale: 1
+  hide_ceilings: true
+  hide_walls: false
+  center_offset: [0.0, 0.0, 0.0] # [0.0, 0.0, 0.0]
+  surface: 
+    category: teatable
+    prim_path: /World/furniture/node_b914fb6bcc81386bfa1ff7a3eb8412b7ac581ff
+    stt: false # specular or transparent, translucent surface
+
+seed: -1 #  set to >= 0 to disable domain randomization
+rt_subframes: 8
+num_frames_per_surface: 3
+visualize: false
+render_after_quiet: true
+shadow: off
+
+viewport:
+  record: false
+
+world:
+  physics_dt: 0.016666667 # 0.01 #
+  rendering_dt: 0.016666667  #0.005 #
+
+depth_sensor:
+  name: realsense
+  clipping_range: [0.1, 5]
+  focal_length: 1.88
+  # horizontal_aperture: 26.42033
+  # vertical_aperture: 14.86144
+  fov: 71.28
+  resolution: [640, 360] # [1280, 720] # 
+  placement: # baseline = 0.055
+    rgb_to_left_ir: 0.0 # 0.015 # 
+    rgb_to_right_ir: 0.055 # 0.070 # 
+    rgb_to_projector: 0.0410 # 0.0425 # 
+  projector:
+    intensity: 5
+    exposure: -1.0
+
+replicator: std_obj # graspnet #   glass, articulated_obj
+domain_randomization: true
+
+lighting:
+  light_type: [Sphere] # Rect # Disk # disk_light #
+  range:  #@see https://zh.wikipedia.org/zh-cn/%E7%90%83%E5%BA%A7%E6%A8%99%E7%B3%BB
+    theta: [30, 90]
+    phi: [-60, 60]
+    radius: [1, 2]
+
+  Distant_light:
+    intensity: 0
+
+  Sphere_light:
+    radius: [1, 1] #[0.5, 1.0]
+    height: [2.5, 2.5] #[1.5, 2]
+    intensity: 
+      "on": [10000, 10000] # [7500, 11000]
+      "off": [500, 500] # [200, 400]
+    treatAsPoint: true
+
+  Disk_light:
+    radius: [1,1] # [0.5, 1.0]
+    height:  [1.5,1.5] #[1.5, 2]
+    intensity: 
+      "on": [10000, 10000] #[6000, 9000]
+      "off": [200, 400]
+
+  Rect_light:
+    width: [100, 100]
+    height: [100, 100]
+    intensity: 
+      "on": [50000, 50000]
+      "off": [2000, 2000] 
+
+specular: 
+  reflection_roughness_constant: [0.05, 0.2] # < 0.4
+  metallic_constant: [0.8, 0.99] # > 0.9
+  reflection_color: [0.0, 1.0]
+
+transparent:
+  roughness_constant: [0.1, 0.1] # 0.05
+  cutout_opacity:  [0.1, 0.2] # [0.6, 0.7] # [0.2, 0.3] # < 0.4
+  thin_walled: false #true
+  glass_ior: [1.4, 1.6] # ~3,  default: 1.491
+  frosting_roughness: [0.2, 0.3] # < 0.1, grayscale only
+
+glass:
+  base_alpha: [0.0, 1.0]
+  ior:  [1.4, 1.6]
+  metallic_factor: [0.0, 0.35]
+  roughness_factor: [0.0, 0.1]
+
+scope_name: /MyScope
+writer: on # off # BasicWriter
+writer_config:
+  output_dir: output_ir
+  start_sequence_id: -1 # -1 means continue from the existing frames, otherwise start with specified frame id
+  rgb: true
+  disparity: true
+  normals: true # TODO
+  # disparity: true
+  # bounding_box_2d_tight: false
+  semantic_segmentation: true
+  distance_to_image_plane: true
+  pointcloud: false
+  # bounding_box_3d: false
+  # occlusion: false
+clear_previous_semantics: true
+
+hydra:
+  run:
+    dir: _outputs/${hydra.job.name}
+  job:
+    chdir: true
+

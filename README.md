@@ -30,8 +30,8 @@ For more information, please visit our [**project page**](https://pku-epic.githu
 
 
  
-## 💡 Updates (Jan 4, 2025)
-
+## 💡 Updates (Feb 27, 2025)
+ - [x] We just release example code for generating IR stereo images using isaac-sim 4.0.0
  - [x] We just release new model variant (Cond. on RGB+Raw), please checkout the updated inference.py
  - [x] Traning protocols and datasets
 
