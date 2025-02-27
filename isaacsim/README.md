@@ -73,6 +73,7 @@ docker run --name isaac-sim --entrypoint bash -it --runtime=nvidia --gpus all -e
 
 ### 4. generate IR renderings
 ```
+cd /root/d3roma
 /isaac-sim/python.sh render.py
 ```
 
