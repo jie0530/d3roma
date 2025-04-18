@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from utils.camera import DepthCamera, RGBDCamera, Realsense
+from utils_d3roma.camera import DepthCamera, RGBDCamera, Realsense
 
 from diffusers import DDPMScheduler, HeunDiscreteScheduler, EulerDiscreteScheduler, DDIMScheduler
 from core.scheduler_ddpm import MyDDPMScheduler
@@ -357,7 +357,7 @@ def plot_sample_t():
 if __name__ == "__main__": # DEBUG & PLOT schdulers
     config = TrainingConfig()
 
-    from utils.losess import *
+    from utils_d3roma.losess import *
 
     import matplotlib.pyplot as plt
     import numpy as np

@@ -3,12 +3,12 @@ from omegaconf import DictConfig, OmegaConf
 from hydra.core.config_store import ConfigStore
 from config import Config, TrainingConfig, setup_hydra_configurations
 from data.data_loader import fetch_dataloader
-from utils.utils import seed_everything
+from utils_d3roma.utils import seed_everything
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from tqdm import tqdm
-from utils.utils import Normalizer
-from utils.frame_utils import read_gen
+from utils_d3roma.utils import Normalizer
+from utils_d3roma.frame_utils import read_gen
 import torch.nn.functional as F
 import shutil
 

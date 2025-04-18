@@ -5,9 +5,9 @@ import torch.nn.functional as F
 import numpy as np
 from diffusers.models import ModelMixin
 from diffusers.configuration_utils import ConfigMixin
-from utils.camera import Realsense
-from utils.ransac import RANSAC, ScaleShiftEstimator, square_error_loss, mean_absolute_error
-from utils.utils import compute_scale_and_shift
+from utils_d3roma.camera import Realsense
+from utils_d3roma.ransac import RANSAC, ScaleShiftEstimator, square_error_loss, mean_absolute_error
+from utils_d3roma.utils import compute_scale_and_shift
 
 class SSIM(nn.Module):
     """Layer to compute the SSIM loss between a pair of images

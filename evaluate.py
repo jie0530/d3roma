@@ -12,13 +12,13 @@ from data.mono_datasets import *
 from accelerate import Accelerator
 from core.guidance import FlowGuidance
 import numpy as np
-from utils.utils import seed_everything, make_image_grid__, debug_stat
+from utils_d3roma.utils import seed_everything, make_image_grid__, debug_stat
 from config import TrainingConfig, create_sampler, setup_hydra_configurations
 from diffusers import UNet2DModel, UNet2DConditionModel
-from utils.utils import RunningAverager, compute_errors, metrics_to_dict, compute_scale_and_shift, normalize_rgb, pretty_json, ensemble_depths, viz_cropped_pointcloud
+from utils_d3roma.utils import RunningAverager, compute_errors, metrics_to_dict, compute_scale_and_shift, normalize_rgb, pretty_json, ensemble_depths, viz_cropped_pointcloud
 from accelerate.logging import get_logger
-from utils.camera import Realsense, plot_uncertainties, plot_denoised_images, plot_error_map
-from utils.utils import InputPadder
+from utils_d3roma.camera import Realsense, plot_uncertainties, plot_denoised_images, plot_error_map
+from utils_d3roma.utils import InputPadder
 import matplotlib.pyplot as plt
 import hydra
 from config import Config
@@ -57,7 +57,7 @@ def evaluate_intermediate_metrics(config, fxb, intermediates, gt_disps, gt_masks
     return disp_metrics, depth_metrics
     
 def denormalize(config, pred_disps, raw_disp=None, mask=None):
-    from utils.utils import Normalizer
+    from utils_d3roma.utils import Normalizer
     norm = Normalizer.from_config(config)
     pred_disps_unnormalized = norm.denormalize(pred_disps, raw_disp, mask)
 

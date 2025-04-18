@@ -23,11 +23,11 @@ from core.guidance import FlowGuidance
 from core.resample import create_named_schedule_sampler
 from accelerate.logging import get_logger
 from evaluate import eval_batch
-from utils.utils import pyramid_noise_like, flatten, pretty_json, metrics_to_dict, InputPadder
-from utils.camera import plot_uncertainties, plot_denoised_images, plot_error_map, plot_loss_terms
-from utils.losess import mse_to_vlb
+from utils_d3roma.utils import pyramid_noise_like, flatten, pretty_json, metrics_to_dict, InputPadder
+from utils_d3roma.camera import plot_uncertainties, plot_denoised_images, plot_error_map, plot_loss_terms
+from utils_d3roma.losess import mse_to_vlb
 from config import TrainingConfig, create_sampler
-from utils.utils import seed_everything
+from utils_d3roma.utils import seed_everything
 import torch.nn as nn
 from torch.optim.lr_scheduler import ConstantLR
 import random
@@ -352,7 +352,7 @@ def train_step(accelerator, config: TrainingConfig, model, optimizer, lr_schedul
                     ((global_step < 1000 and (global_step+1) % 100 == 0) or \
                     (global_step < config.val_every_global_steps and (global_step+1) % (config.val_every_global_steps//10) == 0) or \
                     (global_step+1) % (config.val_every_global_steps//4) == 0)):
-                    from utils.utils import Normalizer
+                    from utils_d3roma.utils import Normalizer
                     norm = Normalizer.from_config(config)
                     # TensorBoardTracker
                     accelerator.get_tracker("tensorboard").log_images({
@@ -396,7 +396,7 @@ def train_step(accelerator, config: TrainingConfig, model, optimizer, lr_schedul
                     ((global_step < 1000 and (global_step+1) % 100 == 0) or \
                     (global_step < config.val_every_global_steps and (global_step+1) % (config.val_every_global_steps//10) == 0) or \
                     (global_step+1) % (config.val_every_global_steps//4) == 0)):
-                    from utils.utils import Normalizer
+                    from utils_d3roma.utils import Normalizer
                     norm = Normalizer.from_config(config)
                     # TensorBoardTracker
                     if config.ssi: 
@@ -463,7 +463,7 @@ def train_step(accelerator, config: TrainingConfig, model, optimizer, lr_schedul
             total_norm = total_norm ** (1. / 2)
             logger.warning(f"->total grad_norm={total_norm}", main_process_only=False)
 
-            from utils.utils import Normalizer
+            from utils_d3roma.utils import Normalizer
             norm = Normalizer.from_config(config)
             # TensorBoardTracker
             if config.ssi: 
